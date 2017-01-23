@@ -1,8 +1,6 @@
 package com.blogpost.hiro99ma.hcesample;
 import java.io.UnsupportedEncodingException;
 
-import org.apache.http.util.ByteArrayBuffer;
-
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
 import android.nfc.cardemulation.HostApduService;
@@ -12,19 +10,19 @@ import android.util.Log;
 
 public class HostSampleService extends HostApduService {
 
-    static enum CardSelect {
+    enum CardSelect {
         SELECT_NONE,
         //SELECT_NDEFAPP,
         SELECT_CCFILE,
         SELECT_NDEFFILE,
     }
     
-    final static int APDU_CLA = 0;
+    //final static int APDU_CLA = 0;
     final static int APDU_INS = 1;
     final static int APDU_P1 = 2;
     final static int APDU_P2 = 3;
     final static int APDU_SELECT_LC = 4;
-    final static int APDU_SELECT_DATA = 5;
+    //final static int APDU_SELECT_DATA = 5;
     final static int APDU_READ_LE = 4;
     
     final static int FILEID_CC = 0xe103;
@@ -38,7 +36,7 @@ public class HostSampleService extends HostApduService {
     
     //final static byte P2_SELECT_FIRST = (byte)0x00;   //詳細不明
     
-    final static byte LE_SELECT_PRESENT = (byte)0x00;
+    //final static byte LE_SELECT_PRESENT = (byte)0x00;
     final static int DATA_OFFSET = 5;
     final static byte[] DATA_SELECT_NDEF = { (byte)0xd2, (byte)0x76, (byte)0x00, (byte)0x00, (byte)0x85, (byte)0x01, (byte)0x01 };
     
@@ -59,12 +57,11 @@ public class HostSampleService extends HostApduService {
         (byte)0x00, 				//read access permission
         (byte)0x00,					//write access permission
     };
-    final static byte[] FILE_NDEF = {
-        (byte)0x00, (byte)0x03,		//LEN
-        
-        //NDEF message
-        (byte)0xd0, (byte)0x00, (byte)0x00,		//empty
-    };
+//    final static byte[] FILE_NDEF = {
+//        (byte)0x00, (byte)0x03,		//LEN
+//        //NDEF message
+//        (byte)0xd0, (byte)0x00, (byte)0x00,		//empty
+//    };
 
     private final static String TAG = "HostSampleService";
 
@@ -100,9 +97,9 @@ public class HostSampleService extends HostApduService {
         boolean ret = false;
         byte[] retData = null;
         
-        for (int i = 0; i < commandApdu.length; i++) {
-            Log.d(TAG, Integer.toHexString(commandApdu[i] & 0xff));
-        }
+//        for (int i = 0; i < commandApdu.length; i++) {
+//            Log.d(TAG, Integer.toHexString(commandApdu[i] & 0xff));
+//        }
         
         switch (commandApdu[APDU_INS]) {
         case INS_SELECT:
@@ -127,7 +124,7 @@ public class HostSampleService extends HostApduService {
                     int file_id = 0;
                     for (int loop = 0; loop < commandApdu[APDU_SELECT_LC]; loop++) {
                         file_id <<= 8;
-                        file_id |= (int)(commandApdu[DATA_OFFSET + loop] & 0xff);
+                        file_id |= commandApdu[DATA_OFFSET + loop] & 0xff;
                     }
                     switch (file_id) {
                     case FILEID_CC:
@@ -204,8 +201,8 @@ public class HostSampleService extends HostApduService {
                 retData = RET_COMPLETE;
             } else {
                 Log.d(TAG, "------------------------------");
-                for (int i = 0; i < retData.length; i++) {
-                    Log.d(TAG, Integer.toHexString(retData[i] & 0xff));
+                for (byte ch : retData) {
+                    Log.d(TAG, Integer.toHexString(ch));
                 }
                 Log.d(TAG, "------------------------------");
            }
@@ -242,17 +239,12 @@ public class HostSampleService extends HostApduService {
     private NdefMessage createUriMessage(int index, String uriBody) {
         try {
             byte[] uriBodyBytes = uriBody.getBytes("UTF-8");
-
-            ByteArrayBuffer buffer = new ByteArrayBuffer(1 + uriBody.length());
-            buffer.append((byte)index);
-            buffer.append(uriBodyBytes, 0, uriBodyBytes.length);
-
-            byte[] payload = buffer.toByteArray();
-            NdefMessage message = new NdefMessage(new NdefRecord[] {
+            byte[] payload = new byte[1 + uriBody.length()];
+            payload[0] = (byte)index;
+            System.arraycopy(uriBodyBytes, 0, payload, 1, uriBodyBytes.length);
+            return new NdefMessage(new NdefRecord[] {
                 new NdefRecord(NdefRecord.TNF_WELL_KNOWN, NdefRecord.RTD_URI, new byte[0], payload)
             });
-
-            return message;
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
